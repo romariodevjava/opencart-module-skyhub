@@ -6,6 +6,11 @@ class ControllerExtensionModuleSkyhub extends Controller
 {
     private $route = 'extension/module/skyhub';
     private $key_prefix = 'module_skyhub';
+    private $skyhub_email;
+    private $skyhub_token;
+    private $skyhub_percentage;
+    private $skyhub_status;
+    private $skyhub_update_product;
 
     public function index()
     {
@@ -138,63 +143,73 @@ class ControllerExtensionModuleSkyhub extends Controller
         $_->removerTabelas();
     }
 
+    private function loadConfig() {
+        $this->load->model($this->route);
+
+        $this->skyhub_email =  $this->config->get($this->key_prefix . '_email');
+        $this->skyhub_token = $this->config->get($this->key_prefix . '_token');
+        $this->skyhub_percentage = $this->config->get($this->key_prefix . '_percentage');
+        $this->skyhub_status = $this->config->get($this->key_prefix . '_status');
+        $this->skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
+    }
+
     public function addProduct(&$route, &$args, &$output)  {
-        $skyhub_email =  $this->config->get($this->key_prefix . '_email');
-        $skyhub_token = $this->config->get($this->key_prefix . '_token');
-        $skyhub_percentage = $this->config->get($this->key_prefix . '_percentage');
-        $skyhub_status = $this->config->get($this->key_prefix . '_status');
-        $skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
+       $this->loadConfig();
 
         $_ = '$this->model_' . $this->route;
 
-        if (!empty($output) && $skyhub_status && $skyhub_update_product) {
+        if (!empty($output) && $this->skyhub_status && $this->skyhub_update_product) {
             $this->load->model($this->route);
-            $product = $_->getProduct($output, $skyhub_percentage);
+            $product = $_->getProduct($output, $this->skyhub_percentage);
             $product['sku'] = $this->generateSkuForSkyHub($output, $_);
 
-            $operation = new ProductOperations($product, $skyhub_email, $skyhub_token, ProductOperations::OPERATION_ADD);
+            $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_ADD);
             $operation->start();
         }
     }
 
     public function syncProducts() {
-        $skyhub_email =  $this->config->get($this->key_prefix . '_email');
-        $skyhub_token = $this->config->get($this->key_prefix . '_token');
-        $skyhub_percentage = $this->config->get($this->key_prefix . '_percentage');
-        $skyhub_status = $this->config->get($this->key_prefix . '_status');
-        $skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
+        $this->loadConfig();
 
         $_ = '$this->model_' . $this->route;
         $idsProductsInSkyHub = $_->getAllProductsInSkyHub();
         $productsNotSended =  $_->getAllProductsOfStore($idsProductsInSkyHub);
+        $i = 0;
 
         foreach ($productsNotSended as $productId) {
-            if ($skyhub_status) {
+            if ($this->skyhub_status) {
                 $this->load->model($this->route);
-                $product = $_->getProduct($productId, $skyhub_percentage);
+                $product = $_->getProduct($productId, $this->skyhub_percentage);
                 $product['sku'] = $this->generateSkuForSkyHub($productId, $_);
 
-                $operation = new ProductOperations($product, $skyhub_email, $skyhub_token, ProductOperations::OPERATION_ADD);
+                $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_ADD);
                 $operation->start();
+                $this->awaitLimitionByTimeOfSkyhub($i);
             }
         }
     }
 
+    private function awaitLimitionByTimeOfSkyhub(&$count) {
+        $count++;
+
+        if ($count >= 9) {
+            sleep(1);
+            $count = 0;
+        }
+    }
+
     public function deleteProduct(&$route, &$args)  {
-        $skyhub_email =  $this->config->get($this->key_prefix . '_email');
-        $skyhub_token = $this->config->get($this->key_prefix . '_token');
-        $skyhub_status = $this->config->get($this->key_prefix . '_status');
-        $skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
+        $this->loadConfig();
         $product_id = $args[0];
 
         $_ = '$this->model_' . $this->route;
         $skyhub_sku = $this->getSkuForSkyHub($product_id, $_);
 
-        if ($skyhub_sku && $skyhub_status && $skyhub_update_product) {
+        if ($skyhub_sku && $this->skyhub_status && $this->skyhub_update_product) {
             $this->load->model($this->route);
             $product = ['sku' => $skyhub_sku];
 
-            $operation = new ProductOperations($product, $skyhub_email, $skyhub_token, ProductOperations::OPERATION_REMOVE);
+            $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_REMOVE);
             $operation->start();
         }
     }

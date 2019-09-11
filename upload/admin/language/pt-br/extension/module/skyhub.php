@@ -19,6 +19,10 @@ $_['help_prazo']             = 'Esse prazo será incrementado no prazo de entreg
 $_['entry_percentage']       = 'Porcentagem de ajuste de preço';
 $_['help_percentage']        = 'Ajuste do preço em porcentagem antes da postagem do produto';
 
+$_['tab_config']        = 'Configuração SkyHub';
+$_['tab_sync']          = 'Sincronizar Produtos no SkyHub';
+
+
 
 // Error
 $_['error_email_message']        = 'Atenção: e-mail informado está incorreto';
