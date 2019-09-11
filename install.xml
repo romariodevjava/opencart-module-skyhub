@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>SkyHyb MarketPlace</name>
+    <version>1.0</version>
+    <author>Romário Pires</author>
+    <code>skyhub</code>
+    <link>romario.ne@hotmail.com</link>
+    <file path="catalog/model/tool/image.php">
+        <operation>
+            <search><![CDATA[
+
+            ]]></search>
+            <add position="before"><![CDATA[
+
+            ]]></add>
+        </operation>
+    </file>
+</modification>
