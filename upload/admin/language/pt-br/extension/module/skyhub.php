@@ -10,6 +10,7 @@ $_['text_edit']               = 'Editando Módulo';
 // Entry
 
 $_['entry_status']           = 'Situação';
+$_['entry_status_update_product'] = 'Sincronizar produto ao adicionar/remover/atualizar no OpenCart';
 $_['entry_product_description']   = 'Digite o e-mail de usuário';
 $_['entry_email']            = 'Digite o e-mail de usuário';
 $_['entry_token']            = 'Digite o Token da sua API do SkyHub';
