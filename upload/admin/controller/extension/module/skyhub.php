@@ -114,9 +114,7 @@ class ControllerExtensionModuleSkyhub extends Controller
 
         $this->load->model($this->route);
 
-        $_ = '$this->model_' . $this->route;
-
-        $_->criarTabelas();
+        $this->model_extension_module_skyhub->criarTabelas();
     }
 
     public function unistall()
@@ -138,9 +136,7 @@ class ControllerExtensionModuleSkyhub extends Controller
         $this->model_extension_event->deleteEvent('product_delete_skyhub');
         $this->model_user_user_group->removePermission($this->user->getGroupId(), 'modify', $this->route);
 
-        $_ = '$this->model_' . $this->route;
-
-        $_->removerTabelas();
+        $this->model_extension_module_skyhub->removerTabelas();
     }
 
     private function loadConfig() {
@@ -156,31 +152,29 @@ class ControllerExtensionModuleSkyhub extends Controller
     public function addProduct(&$route, &$args, &$output)  {
        $this->loadConfig();
 
-        $_ = '$this->model_' . $this->route;
-
         if (!empty($output) && $this->skyhub_status && $this->skyhub_update_product) {
             $this->load->model($this->route);
-            $product = $_->getProduct($output, $this->skyhub_percentage);
-            $product['sku'] = $this->generateSkuForSkyHub($output, $_);
+            $product = $this->model_extension_module_skyhub->getProduct($output, $this->skyhub_percentage);
+            $product['sku'] = $this->generateSkuForSkyHub($output, $this->model_extension_module_skyhub);
 
             $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_ADD);
             $operation->start();
         }
     }
 
-    public function syncProducts() {
+    public function syncProducts($productsIds) {
         $this->loadConfig();
 
-        $_ = '$this->model_' . $this->route;
-        $idsProductsInSkyHub = $_->getAllProductsInSkyHub();
-        $productsNotSended =  $_->getAllProductsOfStore($idsProductsInSkyHub);
+        $idsProductsInSkyHub = $this->model_extension_module_skyhub->getAllProductsInSkyHub();
         $i = 0;
 
-        foreach ($productsNotSended as $productId) {
+        foreach ($productsIds as $productId) {
+            if (in_array($productId, $idsProductsInSkyHub)) continue;
+
             if ($this->skyhub_status) {
                 $this->load->model($this->route);
-                $product = $_->getProduct($productId, $this->skyhub_percentage);
-                $product['sku'] = $this->generateSkuForSkyHub($productId, $_);
+                $product = $this->model_extension_module_skyhub->getProduct($productId, $this->skyhub_percentage);
+                $product['sku'] = $this->generateSkuForSkyHub($productId, $this->model_extension_module_skyhub);
 
                 $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_ADD);
                 $operation->start();
@@ -202,8 +196,7 @@ class ControllerExtensionModuleSkyhub extends Controller
         $this->loadConfig();
         $product_id = $args[0];
 
-        $_ = '$this->model_' . $this->route;
-        $skyhub_sku = $this->getSkuForSkyHub($product_id, $_);
+        $skyhub_sku = $this->getSkuForSkyHub($product_id, $this->model_extension_module_skyhub);
 
         if ($skyhub_sku && $this->skyhub_status && $this->skyhub_update_product) {
             $this->load->model($this->route);
@@ -222,12 +215,11 @@ class ControllerExtensionModuleSkyhub extends Controller
         $skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
         $product_id = $args[0];
 
-        $_ = '$this->model_' . $this->route;
-        $skyhub_sku = $this->getSkuForSkyHub($product_id, $_);
+        $skyhub_sku = $this->getSkuForSkyHub($product_id, $this->model_extension_module_skyhub);
 
         if ($skyhub_sku && $skyhub_status && $skyhub_update_product) {
             $this->load->model($this->route);
-            $product = $_->getProduct($product_id, $skyhub_percentage);
+            $product = $this->model_extension_module_skyhub->getProduct($product_id, $skyhub_percentage);
             $product['sku'] = $skyhub_sku;
 
             $operation = new ProductOperations($product, $skyhub_email, $skyhub_token, ProductOperations::OPERATION_UPDATE);
