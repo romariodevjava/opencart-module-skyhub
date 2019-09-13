@@ -1,12 +1,12 @@
 <?php
 
-include 'SkyHubCommons.php';
+include './SkyHubCommons.php';
 
-class ProductOperations extends Thread {
+class ProductOperations {
 
     const OPERATION_ADD = 1;
-    const OPERATION_UPDATE = 1;
-    const OPERATION_REMOVE = 1;
+    const OPERATION_UPDATE = 2;
+    const OPERATION_REMOVE = 3;
     const OPERATION_PATH = 'products';
 
     private $productData;
@@ -30,7 +30,6 @@ class ProductOperations extends Thread {
 
 
     public function run() {
-        parent::run();
         try {
             if ($this->operation == self::OPERATION_ADD) {
                 $this->addProduct();

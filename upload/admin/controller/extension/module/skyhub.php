@@ -1,6 +1,7 @@
 <?php
 
 include DIR_APPLICATION . 'controller/extension/module/skyhub/ProductOperations.php';
+include DIR_APPLICATION . 'controller/extension/module/skyhub/ProductVariantOperations.php';
 
 class ControllerExtensionModuleSkyhub extends Controller
 {
@@ -73,7 +74,7 @@ class ControllerExtensionModuleSkyhub extends Controller
             return false;
         }
 
-        if (empty($this->request->post[$this->key_prefix . '_email']) || filter_var($this->request->post[$this->key_prefix . '_email'], FILTER_VALIDATE_EMAIL)) {
+        if (empty($this->request->post[$this->key_prefix . '_email']) || !filter_var($this->request->post[$this->key_prefix . '_email'], FILTER_VALIDATE_EMAIL)) {
             $data['error_email'] = $this->language->get('error_email_message');
             return false;
         }
@@ -104,12 +105,11 @@ class ControllerExtensionModuleSkyhub extends Controller
         $this->load->model($this->route);
         $this->load->model('user/user_group');
         $this->load->model('setting/event');
-        $this->load->model('extension/extension');
 
-        $this->model_extension_extension->install('skyhub', $this->route);
         $this->model_user_user_group->addPermission($this->user->getGroupId(), 'modify', $this->route);
         $this->model_setting_event->addEvent('product_create_skyhub', 'admin/model/catalog/product/addProduct/after', $this->route . '/addProduct');
         $this->model_setting_event->addEvent('product_update_skyhub', 'admin/model/catalog/product/editProduct/after', $this->route . '/updateProduct');
+        $this->model_setting_event->addEvent('product_update_stock_skyhub', 'catalog/model/checkout/order/after', $this->route . '/updateProductStock');
         $this->model_setting_event->addEvent('product_delete_skyhub', 'admin/model/catalog/product/deleteProduct/after', $this->route . '/deleteProduct');
 
         $this->load->model($this->route);
@@ -123,16 +123,15 @@ class ControllerExtensionModuleSkyhub extends Controller
         $this->load->model($this->route);
         $this->load->model('user/user_group');
         $this->load->model('setting/event');
-        $this->load->model('extension/extension');
         $this->load->model('extension/module');
         $this->load->model($this->route);
 
-        $this->model_extension_extension->uninstall('skyhub', $this->route);
         $this->model_extension_module->deleteModulesByCode($this->route);
         $this->model_setting_setting->deleteSetting($this->route);
 
         $this->model_extension_event->deleteEvent('product_create_skyhub');
         $this->model_extension_event->deleteEvent('product_update_skyhub');
+        $this->model_extension_event->deleteEvent('product_update_stock_skyhub');
         $this->model_extension_event->deleteEvent('product_delete_skyhub');
         $this->model_user_user_group->removePermission($this->user->getGroupId(), 'modify', $this->route);
 
@@ -172,7 +171,6 @@ class ControllerExtensionModuleSkyhub extends Controller
             if (in_array($productId, $idsProductsInSkyHub)) continue;
 
             if ($this->skyhub_status) {
-                $this->load->model($this->route);
                 $product = $this->model_extension_module_skyhub->getProduct($productId, $this->skyhub_percentage);
                 $product['sku'] = $this->generateSkuForSkyHub($productId, $this->model_extension_module_skyhub);
 
@@ -192,7 +190,7 @@ class ControllerExtensionModuleSkyhub extends Controller
         }
     }
 
-    public function deleteProduct(&$route, &$args)  {
+    public function deleteProduct(&$route, &$args, &$output)  {
         $this->loadConfig();
         $product_id = $args[0];
 
@@ -207,23 +205,48 @@ class ControllerExtensionModuleSkyhub extends Controller
         }
     }
 
-    public function updateProduct(&$route, &$args)  {
-        $skyhub_email =  $this->config->get($this->key_prefix . '_email');
-        $skyhub_token = $this->config->get($this->key_prefix . '_token');
-        $skyhub_percentage = $this->config->get($this->key_prefix . '_percentage');
-        $skyhub_status = $this->config->get($this->key_prefix . '_status');
-        $skyhub_update_product = $this->config->get($this->key_prefix . '_status_update_product');
+    public function updateProduct(&$route, &$args, &$output)  {
+        $this->loadConfig();
         $product_id = $args[0];
 
         $skyhub_sku = $this->getSkuForSkyHub($product_id, $this->model_extension_module_skyhub);
 
-        if ($skyhub_sku && $skyhub_status && $skyhub_update_product) {
-            $this->load->model($this->route);
-            $product = $this->model_extension_module_skyhub->getProduct($product_id, $skyhub_percentage);
+        if ($skyhub_sku && $this->skyhub_status && $this->skyhub_update_product) {
+            $product = $this->model_extension_module_skyhub->getProduct($product_id, $this->skyhub_percentage);
             $product['sku'] = $skyhub_sku;
 
-            $operation = new ProductOperations($product, $skyhub_email, $skyhub_token, ProductOperations::OPERATION_UPDATE);
+            $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_UPDATE);
             $operation->start();
+        }
+    }
+
+    public function updateProductStock(&$route, &$args, &$output)  {
+        $this->loadConfig();
+        $orderId = $args[0];
+
+        if (!$orderId) return;
+        $products = $this->model_extension_module_skyhub->getOrderProducts($orderId);
+
+        $i = 0;
+        foreach ($products as $product) {
+            $skyhub_sku = $this->getSkuForSkyHub($product['product_id'], $this->model_extension_module_skyhub);
+            $variations = $this->model_extension_module_skyhub->getVariationForStockUpdate($orderId, $product['product_id']);
+
+            if ($skyhub_sku && $this->skyhub_status && $this->skyhub_update_product) {
+                $product = $this->model_extension_module_skyhub->getProduct($product['product_id'], $this->skyhub_percentage);
+
+                $operation = new ProductOperations($product, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_UPDATE);
+                $operation->start();
+
+                $o = 0;
+                foreach ($variations as $variation) {
+                    $operation_op = new ProductVariantOperations($variation, $this->skyhub_email, $this->skyhub_token, ProductOperations::OPERATION_UPDATE);
+                    $operation_op->start();
+                    $this->awaitLimitionByTimeOfSkyhub($o);
+                }
+
+                $this->awaitLimitionByTimeOfSkyhub($i);
+            }
         }
     }
 

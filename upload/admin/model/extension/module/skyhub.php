@@ -124,6 +124,22 @@ class ModelExtensionModuleSkyhub extends Model
         return $product;
     }
 
+    public function getProductForUpdateStock($product_id, $skyhub_percentage)
+    {
+        $query = $this->db->query("SELECT DISTINCT p.quantity FROM " . DB_PREFIX . "product p 
+                                   WHERE p.product_id = '" . (int)$product_id . "'");
+
+        $product = null;
+
+        if ($query->num_rows) {
+            $product = array(
+                'qty' => $query->row['quantity'],
+            );
+        }
+
+        return $product;
+    }
+
     public function getProductImages($product_id)
     {
         $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_image WHERE product_id = '" . (int)$product_id . "' ORDER BY sort_order ASC");
@@ -143,7 +159,7 @@ class ModelExtensionModuleSkyhub extends Model
 					   FROM " . DB_PREFIX . "option_description od 
 					   LEFT JOIN " . DB_PREFIX . "option_value_description ovd ON ( od.option_id = ovd.option_id )
 					   LEFT JOIN " . DB_PREFIX . "product_option_value pov ON ( ovd.option_value_id = pov.option_value_id )
-			   		   WHERE pd.product_id = '" . (int)$productId . "'");
+			   		   WHERE pov.product_id = '" . (int)$productId . "'");
         $variations = array();
 
         if ($query->rows) {
@@ -157,7 +173,7 @@ class ModelExtensionModuleSkyhub extends Model
                     'images' => $images,
                     'ean' => $ean,
                     'qty' => $row['quantidadeVariacao'],
-                    'sku' => $row['sku'],
+                    'sku' => empty($row['sku']) ? 'OP' . $row['idVariation'] : $row['sku'],
                     'specifications' => [
                         [
                             'key' => $row['nomeTipoVariacao'],
@@ -184,6 +200,25 @@ class ModelExtensionModuleSkyhub extends Model
         return $variations;
     }
 
+    public function getVariationForStockUpdate($order_id, $order_product_id) {
+        $query = $this->db->query("SELECT pov.sku as sku, pov.quantity as quantidadeVariacao, , pov.product_option_value_id as idVariation FROM " . DB_PREFIX . "order_option oo
+                                     LEFT JOIN product_option_value pov ON oo.product_option_value_id = pov.product_option_value_id
+                                     WHERE oo.order_id = '" . (int)$order_id . "' AND oo.order_product_id = '" . (int)$order_product_id . "'");
+
+        $variations = array();
+
+        if ($query->rows) {
+            foreach ($query->rows as $row) {
+                $variations[] = [
+                    'qty' => $row['quantidadeVariacao'],
+                    'sku' => empty($row['sku']) ? 'OP' . $row['idVariation'] : $row['sku'],
+                ];
+            }
+        }
+
+        return $variations;
+    }
+
     private function categories($product_id) {
         $query = $this->db->query("SELECT cd.name AS name, cd.category_id AS code FROM " . DB_PREFIX . "product_to_category ptc 
 					   LEFT JOIN " . DB_PREFIX . "category c ON ( ptc.category_id = c.category_id )
@@ -191,6 +226,12 @@ class ModelExtensionModuleSkyhub extends Model
 			   		   WHERE ptc.product_id = '" . (int)$product_id . "' 
 			   		   AND c.parent_id <> '0'
 			   		   AND cd.language_id = '" . (int)$this->config->get('config_language_id') . "'");
+
+        return $query->rows;
+    }
+
+    public function getOrderProducts($order_id) {
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "order_product WHERE order_id = '" . (int)$order_id . "'");
 
         return $query->rows;
     }

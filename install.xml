@@ -108,7 +108,7 @@ $product_specials = $this->model_catalog_product->getProductSpecials($result['pr
     <button type="button" form="form-product" formaction="{{ delete }}" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-danger" onclick="confirm('{{ text_confirm }}') ? $('#form-product').submit() : false;"><i class="fa fa-trash-o"></i></button>
                 ]]></search>
             <add position="after"><![CDATA[
-                    <button type="button" form="form-product" formaction="{{ syncSkyHub }}" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-success" onclick="$('#form-product').submit()"><i class="fa fa-arrow-circle-o-up"></i></button>
+                    <button type="button" form="form-product" formaction="{{ syncSkyHub }}" data-toggle="tooltip" title="{{ button_syncSkyhub }}" class="btn btn-success" onclick="$('#form-product').submit()"><i class="fa fa-arrow-circle-o-up"></i></button>
                 ]]></add>
         </operation>
     </file>

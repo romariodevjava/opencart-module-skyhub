@@ -1,6 +1,6 @@
 <?php
 // Heading
-$_['heading_title']           = 'Configurar a SkyHub';
+$_['heading_title']           = 'Integração SkyHub';
 
 // Text
 $_['text_extension']          = 'Extensões';

@@ -51,9 +51,9 @@
                     <div class="form-group required">
                         <label class="col-sm-2 control-label" for="input-percentage"><span data-toggle="tooltip" title="{{ help_percentage }}">{{ entry_percentage }}</span></label>
                         <div class="col-sm-10">
-                            <input type="number" name="module_skyhub_amount_percentage" value="{{ module_skyhub_amount_percentage }}" placeholder="{{ entry_percentage }}" class="form-control" id="input-percentage" required min="0" step="1" max="100" />
-                            {% if  (error_quality)  %}
-                                <div class="text-danger">{{ error_quality }}</div>
+                            <input type="number" name="module_skyhub_percentage" value="{{ module_skyhub_percentage}}" placeholder="{{ entry_percentage }}" class="form-control" id="input-percentage" required min="0" step="1" max="100" />
+                            {% if  (error_percentage)  %}
+                                <div class="text-danger">{{ error_percentage }}</div>
                             {% endif %}
                         </div>
                     </div>
